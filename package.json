@@ -1,0 +1,33 @@
+{
+  "name": "rami-levichrome-ext",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "build:watch": "tsc && vite build --watch",
+    "preview": "vite preview",
+    "watch": "chokidar \"**/*\" --initial -d 2000 -c \"pnpm build\" -i \"node_modules\" -i \"dist\""
+  },
+  "dependencies": {
+    "@extend-chrome/storage": "^1.5.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "webext-bridge": "6.0.1",
+    "zustand": "^4.3.7"
+  },
+  "devDependencies": {
+    "@crxjs/vite-plugin": "2.0.0-beta.12",
+    "@total-typescript/ts-reset": "^0.4.2",
+    "@types/chrome": "^0.0.233",
+    "@types/node": "^18.15.11",
+    "@types/react": "^18.0.37",
+    "@types/react-dom": "^18.0.11",
+    "@vitejs/plugin-react": "^3.1.0",
+    "chokidar-cli": "^3.0.0",
+    "typescript": "^5.0.4",
+    "vite": "^4.2.2",
+    "vite-plugin-svgr": "^2.4.0"
+  }
+}

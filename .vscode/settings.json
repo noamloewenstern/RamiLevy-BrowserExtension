@@ -1,0 +1,16 @@
+{
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/node_modules": true,
+        "**/.vscode": true,
+        "public": true,
+        "LICENSE": true,
+        "tsconfig.tsbuildinfo": true,
+        "*lock.yaml": true,
+        "**/.DS_Store": true,
+        "**/Thumbs.db": true
+    },
+}

@@ -1,0 +1,80 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": [
+      "DOM",
+      "DOM.Iterable",
+      "ESNext"
+    ],
+    "composite": true,
+    "allowJs": false,
+    "skipLibCheck": true,
+    "esModuleInterop": false,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "Node",
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noImplicitAny": false,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "types": [
+      "node",
+      "chrome",
+      "vite/client",
+      "vite-plugin-svgr/client",
+    ],
+    "baseUrl": "src",
+    "paths": {
+      "~/components/*": [
+        "components/*"
+      ],
+      "~/stores/*": [
+        "stores/*"
+      ],
+      "~/stores": [
+        "stores/index.ts"
+      ],
+      "~/assets/*": [
+        "assets/*"
+      ],
+      "~/utils/*": [
+        "utils/*"
+      ],
+      "~/utils": [
+        "utils/index.ts"
+      ],
+      "~/backgroundScripts/*": [
+        "backgroundScripts/*"
+      ],
+      "~/lib/*": [
+        "lib/*"
+      ],
+      "~/contentScript/*": [
+        "contentScript/*"
+      ],
+      "~/parsers/*": [
+        "contentScript/parsers/*"
+      ],
+      "~/config": [
+        "config.ts"
+      ],
+    }
+  },
+  "include": [
+    "vite.config.ts",
+    "manifest.json",
+    "src/**/*",
+    "src/types/shim.d.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "build",
+    "lib",
+    "dist",
+  ]
+}

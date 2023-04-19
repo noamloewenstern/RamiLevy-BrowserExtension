@@ -9,7 +9,7 @@
       "ESNext"
     ],
     "composite": true,
-    "allowJs": false,
+    "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": false,
     "allowSyntheticDefaultImports": true,
@@ -32,6 +32,9 @@
     "paths": {
       "~/components/*": [
         "components/*"
+      ],
+      "~/shared/*": [
+        "shared/*"
       ],
       "~/stores/*": [
         "stores/*"
@@ -68,6 +71,7 @@
   "include": [
     "vite.config.ts",
     "manifest.json",
+    "manifest.ts",
     "src/**/*",
     "src/types/shim.d.ts"
   ],

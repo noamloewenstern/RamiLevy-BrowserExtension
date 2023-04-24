@@ -7,14 +7,14 @@ const manifest: ManifestV3Export = {
     default_title: 'Popup',
     default_popup: 'src/popup/index.html',
     default_icon: {
-      '16': 'logo192.png',
-      '32': 'logo192.png',
-      '48': 'logo192.png',
-      '128': 'logo192.png',
+      '16': 'logo128.png',
+      '32': 'logo128.png',
+      '48': 'logo128.png',
+      '128': 'logo128.png',
     },
   },
   icons: {
-    '48': 'logo192.png',
+    '48': 'logo128.png',
   },
   content_scripts: [
     {
@@ -32,8 +32,8 @@ const manifest: ManifestV3Export = {
     {
       resources: [
         // 'src/contentScript/index.css',
-        'logo192.png',
-        'src/assets/logo192.png',
+        'logo128.png',
+        'src/assets/logo128.png',
         'src/contentScript/interceptRequests/injectedDOMscript.js',
       ],
       matches: ['https://www.rami-levy.co.il/*', 'https://api-prod.rami-levy.co.il/*'],

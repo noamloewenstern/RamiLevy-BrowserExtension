@@ -12,12 +12,12 @@ specifiers:
   chokidar-cli: ^3.0.0
   react: ^18.2.0
   react-dom: ^18.2.0
+  sass: ^1.62.0
   typescript: ^5.0.4
   vite: ^4.2.2
   vite-plugin-svgr: ^2.4.0
   webext-bridge: 6.0.1
   zod: ^3.21.4
-  zustand: ^4.3.7
 
 dependencies:
   '@extend-chrome/storage': 1.5.0
@@ -25,7 +25,6 @@ dependencies:
   react-dom: 18.2.0_react@18.2.0
   webext-bridge: 6.0.1
   zod: 3.21.4
-  zustand: 4.3.7_react@18.2.0
 
 devDependencies:
   '@crxjs/vite-plugin': 2.0.0-beta.12
@@ -36,8 +35,9 @@ devDependencies:
   '@types/react-dom': 18.0.11
   '@vitejs/plugin-react': 3.1.0_vite@4.2.2
   chokidar-cli: 3.0.0
+  sass: 1.62.0
   typescript: 5.0.4
-  vite: 4.2.2_@types+node@18.15.11
+  vite: 4.2.2_g772r5w5ng27elj5pzc7q7vnhy
   vite-plugin-svgr: 2.4.0_vite@4.2.2
 
 packages:
@@ -773,7 +773,7 @@ packages:
       '@babel/plugin-transform-react-jsx-source': 7.19.6_@babel+core@7.21.4
       magic-string: 0.27.0
       react-refresh: 0.14.0
-      vite: 4.2.2_@types+node@18.15.11
+      vite: 4.2.2_g772r5w5ng27elj5pzc7q7vnhy
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -1201,6 +1201,10 @@ packages:
       entities: 4.5.0
     dev: true
 
+  /immutable/4.3.0:
+    resolution: {integrity: sha512-0AOCmOip+xgJwEVTQj1EfiDDOkPmuyllDuTuEX+DDXUgapLAsBIfkg3sxCYyCEA8mQqZrrxPUGjcOQ2JS3WLkg==}
+    dev: true
+
   /import-fresh/3.3.0:
     resolution: {integrity: sha512-veYYhQa+D1QBKznvhUHxb8faxlrwUnxseDAbAp457E0wLNio2bOSKnjYDhMj+YiAq61xrMGhQk9iXVk5FzgQMw==}
     engines: {node: '>=6'}
@@ -1561,6 +1565,16 @@ packages:
       tslib: 2.5.0
     dev: false
 
+  /sass/1.62.0:
+    resolution: {integrity: sha512-Q4USplo4pLYgCi+XlipZCWUQz5pkg/ruSSgJ0WRDSb/+3z9tXUOkQ7QPYn4XrhZKYAK4HlpaQecRwKLJX6+DBg==}
+    engines: {node: '>=14.0.0'}
+    hasBin: true
+    dependencies:
+      chokidar: 3.5.3
+      immutable: 4.3.0
+      source-map-js: 1.0.2
+    dev: true
+
   /scheduler/0.23.0:
     resolution: {integrity: sha512-CtuThmgHNg7zIZWAXi3AsyIzA3n4xx7aNyjwC2VJldO2LMVDhFK+63xGqq6CsJH4rTAt6/M+N4GhZiDYPx9eUw==}
     dependencies:
@@ -1680,14 +1694,6 @@ packages:
       picocolors: 1.0.0
     dev: true
 
-  /use-sync-external-store/1.2.0_react@18.2.0:
-    resolution: {integrity: sha512-eEgnFxGQ1Ife9bzYs6VLi8/4X6CObHMw9Qr9tPY43iKwsPw8xE8+EFsf/2cFZ5S3esXgpWgtSCtLNS41F+sKPA==}
-    peerDependencies:
-      react: ^16.8.0 || ^17.0.0 || ^18.0.0
-    dependencies:
-      react: 18.2.0
-    dev: false
-
   /vite-plugin-svgr/2.4.0_vite@4.2.2:
     resolution: {integrity: sha512-q+mJJol6ThvqkkJvvVFEndI4EaKIjSI0I3jNFgSoC9fXAz1M7kYTVUin8fhUsFojFDKZ9VHKtX6NXNaOLpbsHA==}
     peerDependencies:
@@ -1695,13 +1701,13 @@ packages:
     dependencies:
       '@rollup/pluginutils': 5.0.2
       '@svgr/core': 6.5.1
-      vite: 4.2.2_@types+node@18.15.11
+      vite: 4.2.2_g772r5w5ng27elj5pzc7q7vnhy
     transitivePeerDependencies:
       - rollup
       - supports-color
     dev: true
 
-  /vite/4.2.2_@types+node@18.15.11:
+  /vite/4.2.2_g772r5w5ng27elj5pzc7q7vnhy:
     resolution: {integrity: sha512-PcNtT5HeDxb3QaSqFYkEum8f5sCVe0R3WK20qxgIvNBZPXU/Obxs/+ubBMeE7nLWeCo2LDzv+8hRYSlcaSehig==}
     engines: {node: ^14.18.0 || >=16.0.0}
     hasBin: true
@@ -1731,6 +1737,7 @@ packages:
       postcss: 8.4.22
       resolve: 1.22.2
       rollup: 3.20.6
+      sass: 1.62.0
     optionalDependencies:
       fsevents: 2.3.2
     dev: true
@@ -1799,20 +1806,4 @@ packages:
 
   /zod/3.21.4:
     resolution: {integrity: sha512-m46AKbrzKVzOzs/DZgVnG5H55N1sv1M8qZU3A8RIKbs3mrACDNeIOeilDymVb2HdmP8uwshOCF4uJ8uM9rCqJw==}
-    dev: false
-
-  /zustand/4.3.7_react@18.2.0:
-    resolution: {integrity: sha512-dY8ERwB9Nd21ellgkBZFhudER8KVlelZm8388B5nDAXhO/+FZDhYMuRnqDgu5SYyRgz/iaf8RKnbUs/cHfOGlQ==}
-    engines: {node: '>=12.7.0'}
-    peerDependencies:
-      immer: '>=9.0'
-      react: '>=16.8'
-    peerDependenciesMeta:
-      immer:
-        optional: true
-      react:
-        optional: true
-    dependencies:
-      react: 18.2.0
-      use-sync-external-store: 1.2.0_react@18.2.0
     dev: false

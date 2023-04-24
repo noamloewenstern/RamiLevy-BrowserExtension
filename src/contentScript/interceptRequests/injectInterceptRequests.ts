@@ -1,50 +1,28 @@
-import { shoppingListsStorageBucket } from '~/shared/shopping-cart/shopping-cart';
+import { ItemsMapBucket, shoppingListsStorageBucket } from '~/shared/shopping-cart/shopping-cart';
 import { z } from 'zod';
 import { ResponseShoppingLists, ResponseSingleShoppingList } from '~/shared/shopping-cart/types';
-const injectScriptURLFile = 'src/contentScript/interceptRequests/injectedDOMscript.js';
-function addScriptToDOM() {
-  const xhrOverrideScript = document.createElement('script');
-  xhrOverrideScript.id = '__xhrOverrideScript';
-  xhrOverrideScript.type = 'text/javascript';
-  xhrOverrideScript.src = chrome.runtime.getURL(injectScriptURLFile);
-  document.head.prepend(xhrOverrideScript);
-}
+import { listItemsUrl, shopListsUrlRegexPattern } from './utils';
+import { addInjectScriptAfterDOMReady } from './injectScript';
 
-function addInjectScriptAfterDOMReady() {
-  if (document.body && document.head) {
-    const interceptResultsDataElement = createInterceptDataElement();
-    document.body.appendChild(interceptResultsDataElement);
-    registerInterceptedDataResulstsObserver(interceptResultsDataElement);
-    addScriptToDOM();
-  } else {
-    requestIdleCallback(addInjectScriptAfterDOMReady);
-  }
-}
-
-function createInterceptDataElement() {
-  const interceptDataElement = document.createElement('div');
-  interceptDataElement.id = '__interceptedData';
-  interceptDataElement.innerText = 'intercepted data';
-  interceptDataElement.style.height = '0';
-  interceptDataElement.style.overflow = 'hidden';
-  return interceptDataElement;
-}
-
-export const ResponseInfo = z.object({
+const ResponseInfo = z.object({
   url: z.string(),
   data: z.record(z.any()),
+  method: z.string(),
 });
-export type IResponseInfo = z.infer<typeof ResponseInfo>;
-export function getResponseInfo(url: string) {
-  const respDiv = document.getElementById(`__interceptedData_${url}`);
-  if (respDiv) {
-    return ResponseInfo.parse(JSON.parse(respDiv.innerText));
+type IResponseInfo = z.infer<typeof ResponseInfo>; // Type of the DOM Script intercepting the AJAX requests
+
+function onNewResponseDiv(addedNode: HTMLDivElement) {
+  try {
+    const respInfo = ResponseInfo.parse(JSON.parse(addedNode.innerText));
+    saveNewResponseDataToLocalStorage(respInfo);
+  } catch (e) {
+    console.error('error parsing intercepted data', e);
+    console.log(addedNode.innerText);
   }
-  return;
 }
 
-requestIdleCallback(addInjectScriptAfterDOMReady);
 function registerInterceptedDataResulstsObserver(interceptResultsDataElement: HTMLDivElement) {
+  /* observing the element which the DOM Script will save the responses */
   const observer = new MutationObserver(mutations => {
     mutations.forEach(mutation => {
       if (mutation.type === 'childList') {
@@ -52,9 +30,7 @@ function registerInterceptedDataResulstsObserver(interceptResultsDataElement: HT
         if (addedNodes.length > 0) {
           const addedNode = addedNodes[0];
           if (addedNode instanceof HTMLDivElement) {
-            const url = addedNode.id.replace('__interceptedData_', '');
-            const respInfo = ResponseInfo.parse(JSON.parse(addedNode.innerText));
-            saveNewResponseDataToLocalStorage(respInfo);
+            onNewResponseDiv(addedNode);
           }
         }
       }
@@ -62,36 +38,102 @@ function registerInterceptedDataResulstsObserver(interceptResultsDataElement: HT
   });
   observer.observe(interceptResultsDataElement, { childList: true });
 }
-function saveNewResponseDataToLocalStorage({ data, url }: IResponseInfo) {
-  const urlRegexPattern = /https:\/\/api-prod.rami-levy.co.il\/api\/v2\/site\/clubs\/shop-lists\/(\d+)/;
-  if (url === 'https://api-prod.rami-levy.co.il/api/v2/site/clubs/shop-lists') {
-    try {
-      const parsedData = ResponseShoppingLists.parse(data);
-      shoppingListsStorageBucket.set({ ShoppingListsMeta: parsedData.data });
-    } catch (e) {
-      console.log('error parsing data in ResponseShoppingLists', e);
-      console.log(data);
-    }
-  } else if (!url.match(urlRegexPattern)) {
-    try {
-      const listId = +url.match(urlRegexPattern)![1];
+function saveNewResponseDataToLocalStorage({ data, url, method }: IResponseInfo) {
+  /* saving to cache the result from curtain intercepted AJAX requests */
+  if (method.toUpperCase() === 'POST') {
+    if (url === listItemsUrl) {
+      const items = z.array(z.object({ id: z.number(), name: z.string() })).parse(data.data);
+      const itemsMap = items.reduce((acc, item) => {
+        acc[item.id] = item.name;
+        return acc;
+      }, {} as Record<number, string>);
 
-      const parsedData = ResponseSingleShoppingList.parse(data);
-      const items_count = parsedData.data.items.length;
-      shoppingListsStorageBucket.set(prev => {
-        const existingShoppingList = prev.ShoppingLists.filter(list => list.id !== listId);
-        const shoppingList = {
-          ...parsedData.data,
-          items_count,
-        };
-        const newShoppingLists = [...existingShoppingList, shoppingList];
-        return {
-          ShoppingLists: newShoppingLists,
-        };
-      });
-    } catch (e) {
-      console.log('error parsing data in ResponseShoppingLists', e);
-      console.log(data);
+      ItemsMapBucket.set(itemsMap); // saving to cache
+      return;
+    }
+    return;
+  } else if (method.toUpperCase() === 'GET') {
+    if (!url.match(shopListsUrlRegexPattern)) {
+      return;
+    }
+    const listId = +url.match(shopListsUrlRegexPattern)![1];
+
+    if (!listId) {
+      // all lists response
+
+      try {
+        const shoppingListsInfo = ResponseShoppingLists.parse(data);
+        saveShoppingListMetaDataToStorage(shoppingListsInfo);
+        return;
+      } catch (e) {
+        console.error('error parsing data in ResponseShoppingLists', e);
+        console.log(data);
+        return;
+      }
+    } else {
+      // single list
+      try {
+        const shoppingListInfo = ResponseSingleShoppingList.parse(data);
+        saveShoppingListItemsToStorage(shoppingListInfo, listId);
+        return;
+      } catch (e) {
+        console.error('error parsing data in ResponseShoppingLists', e);
+        console.log(data);
+        return;
+      }
     }
   }
 }
+
+function saveShoppingListMetaDataToStorage(shoppingListsInfo: z.TypeOf<typeof ResponseShoppingLists>) {
+  shoppingListsStorageBucket.set(({ ShoppingLists: prevShoppingLists = [] }) => {
+    if (prevShoppingLists.length === 0) {
+      return { ShoppingLists: shoppingListsInfo.data };
+    }
+    // finding different list changes in items-count (and remove items if count was changed)
+    const newShoppingLists = shoppingListsInfo.data.map(newList => {
+      const prevList = prevShoppingLists.find(prevList => prevList.id === newList.id);
+      if (!prevList) {
+        return newList;
+      }
+      if (prevList.items_count !== newList.items_count) {
+        return { ...newList, items: [] };
+      }
+      return prevList; // and not the newList because we want to keep the items, which is not in the response (since this response is just the metadata)
+    });
+    return { ShoppingLists: newShoppingLists };
+  });
+}
+
+function saveShoppingListItemsToStorage(shoppingListInfo: z.TypeOf<typeof ResponseSingleShoppingList>, listId: number) {
+  shoppingListsStorageBucket.set(({ ShoppingLists: prevShoppingLists = [] }) => {
+    // replacing the changed list with the new one
+    const newShoppingLists = prevShoppingLists.map(prevList => {
+      if (prevList.id === listId) {
+        return {
+          ...shoppingListInfo.data,
+          items_count: shoppingListInfo.data.items.length,
+        };
+      }
+      return prevList;
+    });
+    return {
+      ShoppingLists: newShoppingLists,
+    };
+  });
+}
+
+/*
+  MAIN
+*/
+const main = () => {
+  requestIdleCallback(() => {
+    const responsesElem = addInjectScriptAfterDOMReady();
+    if (!responsesElem) {
+      console.error('failed to add inject script');
+      return;
+    }
+    registerInterceptedDataResulstsObserver(responsesElem);
+  });
+};
+main();

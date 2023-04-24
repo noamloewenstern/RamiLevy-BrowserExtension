@@ -1,11 +1,12 @@
 import { z } from 'zod';
 
+/* API Types */
 export const ItemInfo = z.object({
   id: z.number(),
   shop_list_id: z.number(),
   item_id: z.number(),
   barcode: z.string(),
-  quantity: z.number().optional(),
+  quantity: z.number(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
 
@@ -21,7 +22,7 @@ export const ShoppingListMeta = z.object({
   uuid: z.string(),
   name: z.string(),
   items_count: z.number(),
-  customer_id: z.string().optional(),
+  customer_id: z.number().optional(),
   created_at: z.string().optional(),
   updated_at: z.string().optional(),
 });

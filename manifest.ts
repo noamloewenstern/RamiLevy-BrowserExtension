@@ -42,17 +42,8 @@ const manifest: ManifestV3Export = {
   content_security_policy: {
     extension_pages:
       "default-src 'self'; script-src: 'self' 'unsafe-inline'; object-src 'self' ; default-src 'none'; frame-ancestors 'none';",
-    // 'script-src': [
-    //   "'self'",
-    //   "'unsafe-eval'",
-    //   "'unsafe-inline'",
-    //   'object-src',
-    //   'https://www.rami-levy.co.il/*',
-    //   'https://api-prod.rami-levy.co.il/*',
-    //   'script-src',
-    // ],
   },
-  permissions: ['storage', 'activeTab', 'webRequest', 'cookies', 'webNavigation', 'scripting'],
+  permissions: ['storage', 'activeTab'],
   background: {
     service_worker: 'src/backgroundScripts/background.ts',
     type: 'module',

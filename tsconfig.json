@@ -72,6 +72,7 @@
     "vite.config.ts",
     "manifest.json",
     "manifest.ts",
+    "package.json",
     "src/**/*",
     "src/types/shim.d.ts"
   ],

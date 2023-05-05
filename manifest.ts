@@ -2,7 +2,7 @@ import { ManifestV3Export } from '@crxjs/vite-plugin';
 import packageJson from './package.json';
 const manifest: ManifestV3Export = {
   manifest_version: 3,
-  name: 'Rami Levi Online Helper',
+  name: 'Rami Levy Online Helper',
   version: packageJson.version,
   action: {
     default_title: 'Popup',

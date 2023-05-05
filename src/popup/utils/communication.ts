@@ -4,7 +4,7 @@ import { getActiveTab } from './tabs';
 const _getCurrentActiveTab = async () => {
   const activeTab = await getActiveTab();
   if (!activeTab?.url?.toLowerCase().includes('www.rami-levy.co.il')) {
-    alert('Current Windows is Not Rami-Levi website.');
+    alert('Current Windows is Not Rami-Levy website.');
     return;
   }
   return activeTab;

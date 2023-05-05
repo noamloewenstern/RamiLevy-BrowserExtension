@@ -6,7 +6,7 @@ export default function Options() {
   return (
     <div className='rcet-main-cointainer'>
       {/* Basic simple styles settings page */}
-      <h1>Rami Levi Chrome Extension Options</h1>
+      <h1>Rami Levy Chrome Extension Options</h1>
       <p>Some options</p>
       <EnableReportErrorPage />
       <br />

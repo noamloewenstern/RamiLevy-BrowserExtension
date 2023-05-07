@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build:watch": "tsc && vite build --watch",
+    "build:watch": "tsc && vite build --watch -m development",
     "preview": "vite preview",
     "watch": "chokidar src manifest.json manifest.ts --initial -d 2000 -c \"pnpm build\" -i \"node_modules\" -i \"dist\""
   },

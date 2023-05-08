@@ -1,4 +1,8 @@
 import { onMessage } from 'webext-bridge/content-script';
+import pTimeout from 'p-timeout';
+import { delay } from '~/utils/helpers';
+import { z } from 'zod';
+import { ShoppingList } from '~/shared/shopping-cart/types';
 
 interface ItemInfo {
   itemId: number;
@@ -19,12 +23,14 @@ interface ShoppingListInfo extends ShoppingListMetaInfo {
   items: ItemInfo[];
 }
 
-const clickOnShoppingList = (shoppingListName: string, { stopRecursiveCheck = false } = {}) => {
+async function clickOnShoppingList(shoppingListName: string, { stopRecursiveCheck = false } = {}) {
   if (!isShoppingListsVisible()) {
     if (stopRecursiveCheck) {
       throw new Error('[clickOnShoppingList] ShoppingList lists are not visible');
     }
     document.querySelector<HTMLDialogElement>('#my-list')?.click();
+    await delay(1000);
+    return clickOnShoppingList(shoppingListName, { stopRecursiveCheck: true });
   }
 
   const shoppingListsInfo = getShoppingListsMetaInfo();
@@ -38,8 +44,8 @@ const clickOnShoppingList = (shoppingListName: string, { stopRecursiveCheck = fa
   const clickableElemInsideShoppingList =
     shoppingListInfo.shoppingListElement.querySelector<HTMLDivElement>('div[role="button"]')!;
   clickableElemInsideShoppingList.click();
-};
-const getShoppingListsMetaInfo = () => {
+}
+function getShoppingListsMetaInfo() {
   if (!isShoppingListsVisible()) {
     throw new Error('ShoppingList lists are not visible');
   }
@@ -52,11 +58,12 @@ const getShoppingListsMetaInfo = () => {
   }
 
   return (listsDivs as HTMLDivElement[]).map(getShoppingListMetaInfo);
-};
-const isShoppingListsVisible = () =>
-  document.querySelector<HTMLDivElement>('#online-cart-wrap')?.classList.contains('is-list');
+}
+function isShoppingListsVisible() {
+  return document.querySelector<HTMLDivElement>('#online-cart-wrap')?.classList.contains('is-list');
+}
 
-const getShoppingListIdFromElem = (shoppingListElem: HTMLDivElement) => {
+function getShoppingListIdFromElem(shoppingListElem: HTMLDivElement) {
   const divShoppingListIdRegexPattern = /^list-(\d+)$/;
 
   // Get the div element that matches the regular expression
@@ -68,9 +75,9 @@ const getShoppingListIdFromElem = (shoppingListElem: HTMLDivElement) => {
 
   const shoppingListId = +match[1];
   return shoppingListId;
-};
+}
 
-const getShoppingListMetaInfo = (shoppingListDiv: HTMLDivElement): ShoppingListMetaInfo => {
+function getShoppingListMetaInfo(shoppingListDiv: HTMLDivElement): ShoppingListMetaInfo {
   const shoppingListBtn = [...shoppingListDiv.querySelectorAll('div[role="button"]')].find(e =>
     e?.textContent?.includes('פתח חלונית רשימה'),
   );
@@ -90,7 +97,26 @@ const getShoppingListMetaInfo = (shoppingListDiv: HTMLDivElement): ShoppingListM
     size: shoppingListSize,
     shoppingListElement: shoppingListDiv,
   };
-};
+}
+
+function waitForShoppingListToBeInView({ name, id, waitMs = 6 * 1000 }: { name: string; id: number; waitMs: number }) {
+  // const modelId = `__BVID__${id}___BV_modal_outer_`;
+  return new Promise<HTMLDivElement>(resolve => {
+    const maxSeconds = 6;
+    let currentSecond = 0;
+    const interval = setInterval(() => {
+      currentSecond++;
+      const modal = document.querySelector<HTMLDivElement>('div.modal-dialog.modal-lg > div.modal-content');
+      if (modal) {
+        clearInterval(interval);
+        resolve(modal);
+      } else if (currentSecond > maxSeconds) {
+        clearInterval(interval);
+        throw new Error(`Timeout: Shopping List Modal not in view`);
+      }
+    }, 1000);
+  });
+}
 
 /*
     Listeners
@@ -113,3 +139,101 @@ onMessage('OPEN_SHOPPING_LIST_BY_NAME', ({ data: shoppingListName }) => {
     console.error(e);
   }
 });
+
+onMessage(
+  'APPLY_DUPLICATES_PRODUCTS_TO_SHOPPING_LIST',
+  async ({ data: { shoppingListName, shoppingListId, products } }) => {
+    const duplicatedProducts = products as Exclude<z.TypeOf<typeof ShoppingList>['items'], undefined>;
+    const mouseOverEvent = new MouseEvent('mouseover', {
+      bubbles: true,
+      cancelable: true,
+      view: window,
+    });
+    try {
+      await clickOnShoppingList(shoppingListName);
+      const modalElem = await waitForShoppingListToBeInView({
+        name: shoppingListName,
+        id: shoppingListId,
+        waitMs: 6 * 1000,
+      });
+      const itemsListElem = modalElem.querySelector('.inner-scroll.rl-scroll')!;
+      for (const product of duplicatedProducts) {
+        const itemNameElem = itemsListElem.querySelector(`div[role="button"][id="product-${product.barcode}"]`);
+        if (!itemNameElem) {
+          continue;
+        }
+        const itemAmountElem = itemNameElem?.parentElement?.nextElementSibling?.children[0]!;
+        if (!itemAmountElem) {
+          continue;
+        }
+
+        itemAmountElem.dispatchEvent(mouseOverEvent);
+        await delay(100);
+        const plusBtn = itemAmountElem.querySelector('button.focus-item.btn-acc.plus') as HTMLButtonElement | undefined;
+        const textDiv = itemAmountElem.querySelector('div[type="text"].num-span') as HTMLDivElement | undefined;
+
+        if (!textDiv || !plusBtn) {
+          console.error('no textDiv content elem or plusBtn elem');
+          continue;
+        }
+
+        const maxTimeWait = 6 * 1000;
+
+        await pTimeout(
+          new Promise(async resolve => {
+            const getCurrentAmmount = () => +textDiv.textContent!.trim();
+            let prevAmount = getCurrentAmmount();
+            while (getCurrentAmmount() !== product.quantity) {
+              if (getCurrentAmmount() > product.quantity) {
+                alert(`too much amount of ${product.name} in productName: ${shoppingListName}`);
+                return;
+              }
+              plusBtn.click();
+              if (isDeliveryModalVisible()) {
+                alert('choose time for delivery, and then try again');
+                return resolve(void 0);
+                // closeDeliveryModal();
+                // await delay(100);
+              }
+              await waitForElemContentToChange(textDiv, prevAmount.toString(), maxTimeWait);
+              prevAmount = getCurrentAmmount();
+            }
+            resolve(void 0);
+          }),
+          { milliseconds: maxTimeWait },
+        );
+      }
+      alert('done!');
+    } catch (e: any) {
+      console.error(e);
+      return { success: false, error: e.message };
+    }
+
+    return { success: true };
+  },
+);
+
+function getDeliveryModal() {
+  return document.querySelector<HTMLDivElement>('.delivery-modal');
+}
+function closeDeliveryModal() {
+  const modal = getDeliveryModal();
+  if (!modal) {
+    return;
+  }
+  const closeBtn = modal.querySelector<HTMLDivElement>('div#close-popup');
+  closeBtn?.click();
+}
+function isDeliveryModalVisible() {
+  return getDeliveryModal() !== null;
+}
+
+async function waitForElemContentToChange(elem: HTMLElement, content: string, maxTimeWait: number) {
+  const startTime = Date.now();
+  while (elem.textContent?.trim() === content) {
+    if (Date.now() - startTime > maxTimeWait) {
+      throw new Error(`Timeout: elem content not changed`);
+    }
+    await delay(100);
+  }
+}

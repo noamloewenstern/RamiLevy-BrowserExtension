@@ -1,12 +1,9 @@
 import { z } from 'zod';
 import { ShoppingList } from '~/shared/shopping-cart/types';
-export const getShoppingListItemsMergedContentFromDuplicates = async ({
-  shoppingList1,
-  shoppingList2,
-}: {
-  shoppingList1: z.TypeOf<typeof ShoppingList>;
-  shoppingList2: z.TypeOf<typeof ShoppingList>;
-}) => {
+export const getShoppingListItemsMergedContentFromDuplicates = async (
+  shoppingList1: z.TypeOf<typeof ShoppingList>,
+  shoppingList2: z.TypeOf<typeof ShoppingList>,
+): Promise<Exclude<z.TypeOf<typeof ShoppingList>['items'], undefined>> => {
   const itemsList1 = shoppingList1.items || [];
   const itemsList2 = shoppingList2.items || [];
   const duplicatedItems = itemsList1

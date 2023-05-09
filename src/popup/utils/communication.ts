@@ -1,6 +1,6 @@
 import { sendMessage } from 'webext-bridge/popup';
 import { getActiveTab } from './tabs';
-import { ShoppingList } from '~/shared/shopping-cart/types';
+import { IShoppingList, ShoppingList, ShoppingListBasicInfo } from '~/shared/shopping-cart/types';
 import { z } from 'zod';
 
 const _getCurrentActiveTab = async () => {
@@ -12,28 +12,47 @@ const _getCurrentActiveTab = async () => {
   return activeTab;
 };
 
-export const clickOnShoppingList = async (listName: string) => {
+export const clickOnShoppingList = async ({ name, id }: { name: string; id: number }) => {
   const activeTab = await _getCurrentActiveTab();
   if (!activeTab) return;
 
-  sendMessage('OPEN_SHOPPING_LIST_BY_NAME', listName, { context: 'content-script', tabId: activeTab.id! });
+  sendMessage('OPEN_SHOPPING_LIST', { name, id }, { context: 'content-script', tabId: activeTab.id! });
 };
-export const showShoppingLists = async () => {
+export async function openShoppingList({ forceReopen = false } = {}) {
   const activeTab = await _getCurrentActiveTab();
   if (!activeTab) return;
-  sendMessage('OPEN_SHOPPING_LISTS', undefined, { context: 'content-script', tabId: activeTab.id! });
+
+  await sendMessage('OPEN_SHOPPING_LISTS_MODAL', { forceReopen }, { context: 'content-script', tabId: activeTab.id! });
+}
+export const getShoppingListsMetaInfo = async () => {
+  const activeTab = await _getCurrentActiveTab();
+  if (!activeTab) return;
+  const shoppingListsInfo = await sendMessage('GET_SHOPPING_LISTS_META_INFO', undefined, {
+    context: 'content-script',
+    tabId: activeTab.id!,
+  });
+  return shoppingListsInfo;
 };
 
 export const addProductsToShoppingList = async (payload: {
-  shoppingListId: number;
-  shoppingListName: string;
-  products: z.TypeOf<typeof ShoppingList>['items'];
+  id: number;
+  name: string;
+  items: Exclude<IShoppingList['items'], undefined>;
 }) => {
   const activeTab = await _getCurrentActiveTab();
   if (!activeTab) return;
 
-  const { success, error } = await sendMessage('APPLY_DUPLICATES_PRODUCTS_TO_SHOPPING_LIST', payload, {
+  await sendMessage('APPLY_DUPLICATES_PRODUCTS_TO_SHOPPING_LIST', payload, {
     context: 'content-script',
     tabId: activeTab.id!,
   });
 };
+export async function saveShoppingListsToNewList(payload: { shoppingLists: IShoppingList[]; newListName: string }) {
+  const activeTab = await _getCurrentActiveTab();
+  if (!activeTab) return;
+
+  await sendMessage('ADD_SHOPPING_LISTS_TO_NEW_LIST', payload, {
+    context: 'content-script',
+    tabId: activeTab.id!,
+  });
+}

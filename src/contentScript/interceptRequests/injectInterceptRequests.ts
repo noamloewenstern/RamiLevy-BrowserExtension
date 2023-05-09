@@ -1,8 +1,8 @@
-import { ItemsMapBucket, shoppingListsStorageBucket } from '~/shared/shopping-cart/shopping-cart';
 import { z } from 'zod';
 import { ResponseShoppingLists, ResponseSingleShoppingList } from '~/shared/shopping-cart/types';
 import { listItemsUrl, shopListsUrlRegexPattern } from './utils';
 import { addInjectScriptAfterDOMReady } from './injectScript';
+import { ItemsMapBucket, shoppingListsStorageBucket } from '~/shared/shopping-cart/storage';
 
 const ResponseInfo = z.object({
   url: z.string(),
@@ -67,7 +67,6 @@ function saveNewResponseDataToLocalStorage({ data, url, method }: IResponseInfo)
         return;
       } catch (e) {
         console.error('error parsing data in ResponseShoppingLists', e);
-        console.log(data);
         return;
       }
     } else {
@@ -78,7 +77,6 @@ function saveNewResponseDataToLocalStorage({ data, url, method }: IResponseInfo)
         return;
       } catch (e) {
         console.error('error parsing data in ResponseShoppingLists', e);
-        console.log(data);
         return;
       }
     }

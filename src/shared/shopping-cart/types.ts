@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 /* API Types */
 export const ItemInfo = z.object({
-  id: z.number(),
+  // id: z.number(),
   shop_list_id: z.number(),
   item_id: z.number(),
   barcode: z.string(),
@@ -29,7 +29,6 @@ export const ShoppingListMeta = z.object({
 export const ShoppingList = ShoppingListMeta.extend({
   items: z.array(ItemInfo).default([]).optional(),
 });
-
 export const ResponseShoppingLists = z.object({
   success: z.boolean(),
   data: z.array(ShoppingListMeta),
@@ -40,3 +39,11 @@ export const ResponseSingleShoppingList = z.object({
   data: ShoppingList.omit({ items_count: true }).extend({ items: z.array(ItemInfo) }),
   message: z.string(),
 });
+export interface ShoppingListBasicInfo {
+  id: z.TypeOf<typeof ShoppingListMeta>['id'];
+  name: z.TypeOf<typeof ShoppingListMeta>['name'];
+}
+
+export type IShoppingList = Exclude<z.TypeOf<typeof ShoppingList>, undefined>;
+export type IShoppingListMeta = Exclude<z.TypeOf<typeof ShoppingListMeta>, undefined>;
+export type IShoppingListItem = Exclude<z.TypeOf<typeof ItemInfo>, undefined>;

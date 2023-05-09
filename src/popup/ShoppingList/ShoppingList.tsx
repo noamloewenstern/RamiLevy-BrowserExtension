@@ -1,23 +1,29 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   IStorageShoppingListsBucket,
   ItemsMapBucket,
   shoppingListsStorageBucket,
-} from '~/shared/shopping-cart/shopping-cart';
+} from '~/shared/shopping-cart/storage';
 import './ShoppingList.scss';
-import { addProductsToShoppingList, clickOnShoppingList, showShoppingLists } from '../utils/communication';
-import { getShoppingListItemsMergedContentFromDuplicates } from './helpers';
+import { clickOnShoppingList, saveShoppingListsToNewList, openShoppingList } from '../utils/communication';
 import { downloadAsFile } from '../utils/helpers';
+import { addNamesToItems, mergeQuantityDuplicatedItems } from '~/shared/shopping-cart/helpers';
+import ToggleSwitch from '../components/ToggleSwitch';
 
 const clearLocalCache = () => {
   shoppingListsStorageBucket.set({ ShoppingLists: [] });
   ItemsMapBucket.set({});
 };
-
-export default function _ShoppingList() {
-  const [shoppingLists, setShoppingLists] = useState<IStorageShoppingListsBucket['ShoppingLists']>([]);
-  const [selectedLists, setSelectedLists] = useState<IStorageShoppingListsBucket['ShoppingLists']>([]);
-  const applyDuplicateRef = useRef<HTMLSelectElement>(null);
+type CachedShoppingLists = IStorageShoppingListsBucket['ShoppingLists'];
+type UseCachedShoppingListsData = {
+  shoppingLists: CachedShoppingLists;
+  refresh: () => void;
+};
+const useCachedShoppingLists = (initialValue = []): UseCachedShoppingListsData => {
+  const [shoppingLists, setShoppingLists] = useState<CachedShoppingLists>(initialValue);
+  const refresh = useCallback(async () => {
+    await openShoppingList({ forceReopen: true });
+  }, []);
 
   useEffect(() => {
     shoppingListsStorageBucket.get().then(data => {
@@ -27,45 +33,43 @@ export default function _ShoppingList() {
       setShoppingLists(data.ShoppingLists || []);
     });
   }, []);
-  async function downloadDuplictedItemsSum() {
-    if (selectedLists?.length !== 2) {
-      alert('You must select only 2 lists');
+
+  return { shoppingLists, refresh };
+};
+
+export default function _ShoppingList() {
+  const { shoppingLists, refresh: refreshShoppingLists } = useCachedShoppingLists();
+  const [selectedLists, setSelectedLists] = useState<IStorageShoppingListsBucket['ShoppingLists']>([]);
+  const [debug, setDebug] = useState(false);
+
+  async function handleDownloadDuplictedItemsSum() {
+    const [, duplicatedItems] = await mergeQuantityDuplicatedItems(...shoppingLists);
+    if (!duplicatedItems.length) {
+      alert('No Duplicates');
       return;
     }
-    const duplicatedItems = await getShoppingListItemsMergedContentFromDuplicates(selectedLists[0], selectedLists[1]);
-    if (duplicatedItems.length === 0) {
-      alert('No duplicated items found');
-      return;
-    }
-    const itemsNamesMap = await ItemsMapBucket.get();
-    const itemsWithNames = duplicatedItems.map(item => {
-      const name = itemsNamesMap[item.item_id] || item.item_id;
-      return { ...item, name };
-    });
+    const itemsWithNames = await addNamesToItems(duplicatedItems);
     const downloadContent = itemsWithNames.map(item => `${item.name} : ${item.quantity}`).join('\n');
 
     downloadAsFile(downloadContent, 'duplicated-items.txt');
   }
+  async function handleSaveShoppingListsToNewList() {
+    const newListName = prompt('Enter new list name');
+    if (!newListName) return;
+    try {
+      await saveShoppingListsToNewList({ shoppingLists: selectedLists, newListName });
+    } catch (e: any) {
+      console.error(e);
+      alert('Error saving list ' + e?.message);
+    }
+  }
+  async function handleDownloadSelectShoppingLists() {
+    selectedLists.map(async list => {
+      const itemsWithNames = await addNamesToItems(list.items || []);
+      const downloadContent = itemsWithNames.map(item => `${item.name} : ${item.quantity}`).join('\n');
 
-  async function applyDuplicateItemsInListToList() {
-    if (selectedLists?.length !== 2) {
-      alert('You must select only 2 lists');
-      return;
-    }
-    const listId = parseInt(applyDuplicateRef.current!.value);
-    const listName = shoppingLists.find(list => list.id === listId)!.name;
-    const duplicatedItems = await getShoppingListItemsMergedContentFromDuplicates(selectedLists[0], selectedLists[1]);
-    if (duplicatedItems.length === 0) {
-      alert('No duplicated items found');
-      return;
-    }
-    const itemsNamesMap = await ItemsMapBucket.get();
-    const itemsWithNames = duplicatedItems.map(item => {
-      const name = itemsNamesMap[item.item_id] || item.item_id.toString();
-      return { ...item, name };
+      downloadAsFile(downloadContent, `${list.name}.txt`);
     });
-
-    addProductsToShoppingList({ shoppingListId: listId, shoppingListName: listName, products: itemsWithNames });
   }
 
   const onCheckShoppingList = (
@@ -73,15 +77,19 @@ export default function _ShoppingList() {
     shoppingListInfo: IStorageShoppingListsBucket['ShoppingLists'][0],
   ) => {
     if (isChecked) {
-      if (selectedLists.length === 2) {
-        alert('You can select only 2 lists');
-        return;
-      }
       setSelectedLists(prev => [...prev, shoppingListInfo]);
     } else {
       setSelectedLists(prev => prev.filter(list => list.id !== shoppingListInfo.id));
     }
   };
+
+  const downloadCache = async () => {
+    const data = await shoppingListsStorageBucket.get();
+    const s = JSON.stringify(data).slice(0, 100);
+    // alert(`data:\n${s}`);
+    downloadAsFile(JSON.stringify(data), 'shopping-lists-cache.json');
+  };
+
   return (
     <div className='shopping-lists'>
       <h1>רשימות קנייה</h1>
@@ -103,7 +111,10 @@ export default function _ShoppingList() {
                     disabled={maxChecked}
                   />
                 ) : (
-                  <button className='button update-button' onClick={() => clickOnShoppingList(listInfo.name)}>
+                  <button
+                    className='button update-button'
+                    onClick={() => clickOnShoppingList({ name: listInfo.name, id: listInfo.id })}
+                  >
                     Update
                   </button>
                 )}
@@ -113,33 +124,42 @@ export default function _ShoppingList() {
         })}
         {shoppingLists.length > 0 ? (
           <>
-            <button className='button' onClick={downloadDuplictedItemsSum} disabled={selectedLists.length !== 2}>
-              Download Duplicated Items Sum
+            {debug && (
+              <>
+                <button
+                  className='button'
+                  onClick={handleDownloadSelectShoppingLists}
+                  disabled={selectedLists.length === 0}
+                >
+                  Download Shopping Lists Info
+                </button>
+                <button
+                  className='button'
+                  onClick={handleDownloadDuplictedItemsSum}
+                  disabled={selectedLists.length !== 2}
+                >
+                  Download Duplicated Items Sum
+                </button>
+              </>
+            )}
+            <button className='button' onClick={handleSaveShoppingListsToNewList} disabled={selectedLists.length === 0}>
+              Save To New List
             </button>
-            <div className='select-apply-dup'>
-              <button
-                className='button'
-                onClick={applyDuplicateItemsInListToList}
-                disabled={selectedLists.length !== 2}
-              >
-                Apply Duplicates to
-              </button>
-              <select ref={applyDuplicateRef}>
-                {shoppingLists.map(list => (
-                  <option key={list.id} value={list.id}>
-                    {list.name}
-                  </option>
-                ))}
-              </select>
-            </div>
             <button className='button' onClick={clearLocalCache}>
               clear cache
             </button>
+            <ToggleSwitch id='toggle-debug' isChecked={debug} onChange={() => setDebug(prev => !prev)} label='Debug' />
           </>
         ) : (
-          <button className='button' onClick={showShoppingLists}>
-            Show Shopping Lists
-          </button>
+          <>
+            <button className='button' onClick={refreshShoppingLists}>
+              Show Shopping Lists
+            </button>
+
+            <button className='button' onClick={downloadCache}>
+              Download Cache Storage
+            </button>
+          </>
         )}
       </ul>
     </div>

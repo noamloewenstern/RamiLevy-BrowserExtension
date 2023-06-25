@@ -109,7 +109,7 @@ async function getShoppingListElemFromId(id: number) {
 export async function toggleShowShoppingLists() {
   if (isShoppingListsVisible()) {
     // close modal
-    document.querySelector<HTMLDivElement>('div#close-modal')?.click();
+    document.querySelector<HTMLDivElement>('div#close-popup')?.click();
     await waitForValue(() => !isShoppingListsVisible(), {
       ms: 4000,
       message: 'toggleShowShoppingLists > !isShoppingListsVisible()',
@@ -131,13 +131,13 @@ export async function toggleShowShoppingLists() {
   // open modal
   document.querySelector<HTMLDialogElement>('#my-list')?.click();
   await waitForValue(isShoppingListsVisible, {
-    ms: 4000,
+    ms: 5000,
     message: 'toggleShowShoppingLists > isShoppingListsVisible',
   });
 }
 export function isCurrentlyViewingAShoppingList({ includeLoadedItems = false } = {}) {
   const backBtn = document.querySelector('div.modal-dialog div.modal-body h2') as HTMLElement | undefined;
-  const closeBtn = document.querySelector<HTMLDivElement>('div#close-modal');
+  const closeBtn = document.querySelector<HTMLDivElement>('div#close-popup');
   const modalContentElem = document.querySelector<HTMLDivElement>('div.modal-dialog.modal-lg > div.modal-content');
   const respObj = backBtn?.textContent?.trim() === 'חזרה' &&
     !!closeBtn &&
@@ -173,7 +173,7 @@ export async function waitTillShoppingListsVisible(ms = 4000) {
 
 export function isShoppingListsVisible() {
   return (
-    document.querySelector('div.modal-body div#close-modal') &&
+    document.querySelector('div.modal-body div#close-popup') &&
     !isCurrentlyViewingAShoppingList() &&
     document.querySelector('div.modal-body h3')?.textContent?.trim() === 'הרשימות שלי'
   );

@@ -43,7 +43,7 @@ export default function _ShoppingList() {
   const [debug, setDebug] = useState(false);
 
   async function handleDownloadDuplictedItemsSum() {
-    const [, duplicatedItems] = await mergeQuantityDuplicatedItems(...shoppingLists);
+    const [, duplicatedItems] = await mergeQuantityDuplicatedItems(...selectedLists);
     if (!duplicatedItems.length) {
       alert('No Duplicates');
       return;

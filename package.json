@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "build:watch": "tsc && vite build --watch -m development",
+    "build:zip": "npm run build && npm run zip",
+    "zip": "cd dist && bestzip --force node ../rami-levy-chrome-ext.zip *",
     "d": "pm2 start --attach pnpm -- build:watch",
     "preview": "vite preview",
     "watch": "chokidar src manifest.json manifest.ts --initial -d 2000 -c \"pnpm build\" -i \"node_modules\" -i \"dist\""
@@ -27,6 +29,7 @@
     "@types/react": "^18.2.14",
     "@types/react-dom": "^18.2.6",
     "@vitejs/plugin-react": "^4.0.1",
+    "bestzip": "^2.2.1",
     "chokidar-cli": "^3.0.0",
     "node-cmd": "^5.0.0",
     "sass": "^1.63.6",
